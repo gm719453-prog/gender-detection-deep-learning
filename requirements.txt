@@ -1,0 +1,7 @@
+tensorflow-cpu>=2.18.0
+Pillow
+scikit-learn
+matplotlib
+seaborn
+tqdm
+opencv-python-headless
