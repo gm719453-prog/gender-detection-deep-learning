@@ -10,15 +10,16 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent
 
 # ── Dataset paths ─────────────────────────────────────────────────────────────
-DATASET_RAW_DIR      = PROJECT_ROOT / "dataset" / "raw"
+DATASET_RAW_DIR       = PROJECT_ROOT / "dataset" / "raw"
 DATASET_PROCESSED_DIR = PROJECT_ROOT / "dataset" / "processed"
 
-# UTKFace download URL (Kaggle mirror via Google Drive)
+# UTKFace download URL
 UTKFACE_DATASET_URL = "https://drive.google.com/uc?id=1GA2M4j8fJn8v3g3z5z5z5z5z5z5z5z5"
 
 # ── Model settings ────────────────────────────────────────────────────────────
 MODEL_SAVE_DIR       = PROJECT_ROOT / "models"
-MODEL_FILE           = MODEL_SAVE_DIR / "gender_detection_model.h5"
+MODEL_FILE           = MODEL_SAVE_DIR / "gender_detection_model.keras"
+MODEL_FILE_H5        = MODEL_SAVE_DIR / "gender_detection_model.h5"  # legacy
 
 # Transfer learning backbone
 BACKBONE             = "MobileNetV2"
@@ -54,8 +55,8 @@ EARLY_STOP_PATIENCE  = 7
 EARLY_STOP_MIN_DELTA = 0.001
 
 # ── Preprocessing ─────────────────────────────────────────────────────────────
-MEAN_SUBTRACTION     = True          # subtract ImageNet mean
-NORMALIZATION        = True          # rescale to [-1, 1] for MobileNetV2
+MEAN_SUBTRACTION     = True
+NORMALIZATION        = True
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 LOG_DIR              = PROJECT_ROOT / "logs"

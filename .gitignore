@@ -22,6 +22,18 @@ env/
 dataset/raw/
 dataset/processed/
 
+# Demo model creation script
+create_demo_model.py
+
+# Runtime override (not respected by Streamlit Cloud)
+runtime.txt
+
+# Old h5 models
+models/gender_detection_model.h5
+
+# Logs
+*.log
+
 # Logs
 logs/
 

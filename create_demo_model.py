@@ -1,22 +1,17 @@
 """
 create_demo_model.py – Create a MobileNetV2-based model for deployment.
 
-This script creates a properly structured MobileNetV2 transfer-learning model
-that works with the app's prediction pipeline. For the deployed demo, we use
-MobileNetV2 base with a trained classification head on synthetic face features.
-
-The model is fully functional and will produce reasonable predictions.
+Compatible with Keras 3 (TensorFlow 2.16+).
+Saves model in native .keras format.
 """
+
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers, models
-
-# Suppress verbose TF logs
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-tf.get_logger().setLevel('ERROR')
 
 
 def create_gender_model(input_shape=(224, 224, 3), num_classes=2):
@@ -51,7 +46,6 @@ def train_demo_model():
         metrics=["accuracy"],
     )
 
-    # Generate synthetic training data to train the head
     print("[*] Generating training data …")
     np.random.seed(42)
     tf.random.set_seed(42)
@@ -65,7 +59,7 @@ def train_demo_model():
     val_labels = []
 
     for i in range(n_samples):
-        label = i % 2  # Alternating labels for synthetic training
+        label = i % 2
         if label == 0:
             img = np.random.rand(*img_size).astype(np.float32) * 0.6 + 0.2
             img[80:140, 80:140] = img[80:140, 80:140] * 0.8
@@ -88,7 +82,6 @@ def train_demo_model():
     print(f"[*] Training data: {X_train.shape}, Labels: {y_train.shape}")
     print(f"[*] Validation data: {X_val.shape}, Labels: {y_val.shape}")
 
-    # Train the classification head
     print("[*] Training classification head …")
     model.fit(
         X_train, y_train,
@@ -97,24 +90,14 @@ def train_demo_model():
         batch_size=32,
     )
 
-    # Save the model in both .h5 and .keras formats
+    # Save in native .keras format (Keras 3 compatible)
     import config
-    model_path = str(config.MODEL_FILE)
+    keras_path = str(config.MODEL_FILE).replace(".h5", ".keras")
     config.MODEL_SAVE_DIR.mkdir(parents=True, exist_ok=True)
-    
-    # Save as .h5 (legacy, for broader compatibility)
-    model.save(model_path)
-    print(f"[✓] Model saved to {model_path}")
-    
-    # Also save as .keras (modern format)
-    keras_path = model_path.replace(".h5", ".keras")
-    try:
-        model.save(keras_path)
-        print(f"[✓] Model saved to {keras_path}")
-    except Exception as e:
-        print(f"[!] Could not save .keras format: {e}")
+    model.save(keras_path)
+    print(f"[✓] Model saved to {keras_path}")
 
-    # Test the model with a sample prediction
+    # Test the model
     test_img = np.random.rand(1, 224, 224, 3).astype(np.float32)
     pred = model.predict(test_img)
     print(f"[✓] Test prediction: {pred[0]}")

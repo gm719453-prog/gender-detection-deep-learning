@@ -12,6 +12,7 @@ A premium, modern UI featuring:
   - Professional typography and attractive icons
 
 Optimized for Streamlit Community Cloud deployment.
+Compatible with Keras 3 (TensorFlow 2.16+).
 """
 
 from __future__ import annotations
@@ -170,13 +171,26 @@ def inject_custom_css(theme: str = "light"):
 
 
 # ── Model loading ─────────────────────────────────────────────────────────────
+def find_model_file() -> str | None:
+    """Find the model file - try .keras first, then .h5."""
+    model_dir = Path(MODEL_FILE).parent
+    
+    # Try .keras format first (native Keras 3)
+    keras_path = str(model_dir / "gender_detection_model.keras")
+    if Path(keras_path).exists():
+        return keras_path
+    
+    # Fall back to .h5
+    h5_path = str(model_dir / "gender_detection_model.h5")
+    if Path(h5_path).exists():
+        return h5_path
+    
+    return None
+
+
 @st.cache_resource(show_spinner=False)
 def load_keras_model(model_path: str):
-    """Load and cache the Keras model. Tries .keras then .h5 format."""
-    # Try .keras format first (modern Keras), then fall back to .h5
-    keras_path = model_path.replace(".h5", ".keras")
-    if Path(keras_path).exists():
-        return keras.models.load_model(keras_path)
+    """Load and cache the Keras model."""
     return keras.models.load_model(model_path)
 
 
@@ -227,8 +241,8 @@ def main():
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Check model exists ────────────────────────────────────────────────
-    model_path = str(MODEL_FILE)
-    model_exists = Path(model_path).exists()
+    model_path = find_model_file()
+    model_exists = model_path is not None
 
     # ── Upload section ────────────────────────────────────────────────────
     col_left, col_right = st.columns([1, 1], gap="large")
@@ -312,7 +326,7 @@ def main():
             """, unsafe_allow_html=True)
 
             for cls, prob in result["probabilities"].items():
-                st.markdown(f"<p><strong>{cls}</strong> -> {prob}%</p>", unsafe_allow_html=True)
+                st.markdown(f"<p><strong>{cls}</strong> → {prob}%</p>", unsafe_allow_html=True)
 
             st.markdown(f"""
                 </div>

@@ -1,19 +1,12 @@
 """
 predict.py – Standalone inference for gender detection.
 
-This module provides a clean, reusable API for predicting gender from a
-single face image.  It can be imported by the Streamlit app or used from
-the command line.
-
-Usage (CLI):
-    python predict.py path/to/face.jpg
-    python predict.py --model models/gender_detection_model.h5 --image face.jpg
+Compatible with Keras 3 (TensorFlow 2.16+).
 """
 
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 import time
 from pathlib import Path
@@ -32,7 +25,6 @@ def preprocess_image(image_path: str | Path) -> np.ndarray:
     img = Image.open(str(image_path)).convert("RGB")
     img = img.resize((INPUT_SHAPE[0], INPUT_SHAPE[1]), Image.BILINEAR)
     arr = np.array(img, dtype=np.float32) / 255.0
-    # Expand batch dimension → shape (1, 224, 224, 3)
     arr = np.expand_dims(arr, axis=0)
     return arr
 
@@ -41,9 +33,28 @@ def preprocess_image(image_path: str | Path) -> np.ndarray:
 _model_cache = {}
 
 
-def load_model(model_path: str | Path = MODEL_FILE) -> keras.Model:
+def find_model_file() -> str:
+    """Find the model file - try .keras first, then .h5."""
+    model_dir = Path(MODEL_FILE).parent
+    
+    keras_path = str(model_dir / "gender_detection_model.keras")
+    if Path(keras_path).exists():
+        return keras_path
+    
+    h5_path = str(model_dir / "gender_detection_model.h5")
+    if Path(h5_path).exists():
+        return h5_path
+    
+    return str(MODEL_FILE)
+
+
+def load_model(model_path: str | Path = None) -> keras.Model:
     """Load the trained Keras model (cached after first call)."""
-    model_path = str(model_path)
+    if model_path is None:
+        model_path = find_model_file()
+    else:
+        model_path = str(model_path)
+    
     if model_path not in _model_cache:
         print(f"[*] Loading model from {model_path} …")
         _model_cache[model_path] = keras.models.load_model(model_path)
@@ -53,33 +64,23 @@ def load_model(model_path: str | Path = MODEL_FILE) -> keras.Model:
 # ── Prediction ────────────────────────────────────────────────────────────────
 def predict_gender(
     image_path: str | Path,
-    model_path: str | Path = MODEL_FILE,
+    model_path: str | Path = None,
 ) -> dict:
-    """Predict gender from a single face image.
-
-    Returns
-    -------
-    dict
-        ``{"gender": str, "confidence": float, "elapsed_ms": float}``
-    """
+    """Predict gender from a single face image."""
     model = load_model(model_path)
 
-    # Validate file
     image_path = Path(image_path)
     if not image_path.exists():
         raise FileNotFoundError(f"Image not found: {image_path}")
     if image_path.suffix.lower() not in {".jpg", ".jpeg", ".png"}:
         raise ValueError(f"Unsupported image format: {image_path.suffix}")
 
-    # Preprocess
     batch = preprocess_image(image_path)
 
-    # Inference
     start = time.perf_counter()
     preds = model.predict(batch)
     elapsed = (time.perf_counter() - start) * 1000
 
-    # Decode
     probs = preds[0]
     idx = int(np.argmax(probs))
     confidence = float(probs[idx] * 100)
@@ -95,7 +96,7 @@ def predict_gender(
 # ── Batch prediction ──────────────────────────────────────────────────────────
 def predict_batch(
     image_paths: list[str | Path],
-    model_path: str | Path = MODEL_FILE,
+    model_path: str | Path = None,
 ) -> list[dict]:
     """Run prediction on a list of images."""
     results = []
@@ -113,7 +114,7 @@ def predict_batch(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Predict gender from a face image.")
     parser.add_argument("--image", "-i", type=str, required=True, help="Path to the face image.")
-    parser.add_argument("--model", "-m", type=str, default=str(MODEL_FILE), help="Path to the .h5 model file.")
+    parser.add_argument("--model", "-m", type=str, default=None, help="Path to the model file.")
     args = parser.parse_args()
 
     print("=" * 50)
