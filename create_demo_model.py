@@ -52,7 +52,6 @@ def train_demo_model():
     )
 
     # Generate synthetic training data to train the head
-    # This trains the classifier to differentiate facial feature patterns
     print("[*] Generating training data …")
     np.random.seed(42)
     tf.random.set_seed(42)
@@ -60,9 +59,6 @@ def train_demo_model():
     n_samples = 500
     img_size = (224, 224, 3)
 
-    # Create synthetic images with distinguishable patterns for two classes
-    # Class 0 (Male): slightly different feature distributions
-    # Class 1 (Female): slightly different feature distributions
     train_images = []
     train_labels = []
     val_images = []
@@ -70,14 +66,12 @@ def train_demo_model():
 
     for i in range(n_samples):
         label = i % 2  # Alternating labels for synthetic training
-        # Generate slightly different patterns for each class
         if label == 0:
             img = np.random.rand(*img_size).astype(np.float32) * 0.6 + 0.2
-            # Add subtle pattern differences
-            img[80:140, 80:140] = img[80:140, 80:140] * 0.8  # center area variation
+            img[80:140, 80:140] = img[80:140, 80:140] * 0.8
         else:
             img = np.random.rand(*img_size).astype(np.float32) * 0.5 + 0.25
-            img[80:140, 80:140] = img[80:140, 80:140] * 1.2  # center area variation
+            img[80:140, 80:140] = img[80:140, 80:140] * 1.2
 
         if i < n_samples * 0.8:
             train_images.append(img)
@@ -101,19 +95,28 @@ def train_demo_model():
         validation_data=(X_val, y_val),
         epochs=15,
         batch_size=32,
-        verbose=1,
     )
 
-    # Save the model
+    # Save the model in both .h5 and .keras formats
     import config
     model_path = str(config.MODEL_FILE)
     config.MODEL_SAVE_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # Save as .h5 (legacy, for broader compatibility)
     model.save(model_path)
     print(f"[✓] Model saved to {model_path}")
+    
+    # Also save as .keras (modern format)
+    keras_path = model_path.replace(".h5", ".keras")
+    try:
+        model.save(keras_path)
+        print(f"[✓] Model saved to {keras_path}")
+    except Exception as e:
+        print(f"[!] Could not save .keras format: {e}")
 
     # Test the model with a sample prediction
     test_img = np.random.rand(1, 224, 224, 3).astype(np.float32)
-    pred = model.predict(test_img, verbose=0)
+    pred = model.predict(test_img)
     print(f"[✓] Test prediction: {pred[0]}")
     print(f"    Predicted class: {config.CLASS_NAMES[int(np.argmax(pred[0]))]}")
 
